@@ -1,0 +1,847 @@
+================================================================================
+CLINICAL DECISION MAKING APPLICATION - METHODOLOGY DOCUMENT
+================================================================================
+
+PROJECT TITLE: Gen-AI Clinical Decision Making System
+TECHNOLOGY STACK: Python, FastAPI, Azure AI Inference, GitHub AI Models
+DATE: 2024
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+1.1 Purpose
+-----------
+This application is an AI-powered clinical decision-making assistant that 
+provides medical information and guidance to users. The system uses advanced
+language models to answer medical questions, provide symptom analysis, and offer
+clinical decision support.
+
+1.2 Objectives
+--------------
+- Develop a web-based chat interface for medical queries
+- Integrate AI language models for medical assistance
+- Provide accurate and concise medical information
+- Ensure user-friendly interface with real-time responses
+- Implement secure API authentication
+- Create a scalable and maintainable architecture
+
+1.3 Scope
+---------
+- Backend API development using FastAPI
+- Frontend web interface with HTML/CSS/JavaScript
+- Integration with GitHub AI Inference API
+- Medical question answering system
+- Error handling and user feedback mechanisms
+
+================================================================================
+2. SYSTEM ARCHITECTURE
+================================================================================
+
+2.1 High-Level Architecture
+---------------------------
+The application follows a client-server architecture:
+
+    [User Browser]
+         |
+         | HTTP/HTTPS
+         |
+    [Frontend - HTML/JS]
+         |
+         | REST API Calls
+         |
+    [FastAPI Backend Server]
+         |
+         | API Authentication
+         |
+    [GitHub AI Inference API]
+         |
+         | AI Model Processing
+         |
+    [gpt-4o-mini Model]
+
+2.2 Component Breakdown
+-----------------------
+
+2.2.1 Frontend Layer
+--------------------
+Location: frontend/index.html
+Technology: HTML5, CSS3, JavaScript (Vanilla), LocalStorage API
+
+Components:
+- Professional Chat Interface UI
+- Patient History Sidebar
+- Message Display Area with Icons
+- Input Form with Professional Styling
+- Error Handling UI
+- Loading Indicators
+- Session Management
+- History Persistence (LocalStorage)
+
+Responsibilities:
+- User interaction handling
+- API request management
+- Response display with medical context
+- Error visualization
+- Real-time UI updates
+- Patient consultation history management
+- Session persistence across page reloads
+- History retrieval and display
+
+2.2.2 Backend Layer
+--------------------
+Location: server/app/
+Technology: Python 3.13, FastAPI, Uvicorn
+
+Structure:
+├── main.py              # Application entry point, routing, CORS setup
+├── routes/
+│   └── chat_router.py  # Chat API endpoint definitions
+├── services/
+│   └── llm_service.py  # LLM integration and business logic
+├── schemas/
+│   └── chat_schema.py  # Data validation models
+└── models/
+    └── user_model.py   # Data models (if needed)
+
+Responsibilities:
+- API endpoint management
+- Request validation
+- Business logic processing
+- External API integration
+- Error handling
+- Response formatting
+
+2.2.3 External Services
+-----------------------
+- GitHub AI Inference API
+  - Endpoint: https://models.github.ai/inference
+  - Model: gpt-4o-mini
+  - Authentication: GitHub Personal Access Token
+
+================================================================================
+3. TECHNICAL IMPLEMENTATION DETAILS
+================================================================================
+
+3.1 Backend Implementation
+---------------------------
+
+3.1.1 FastAPI Application Setup
+---------------------------------
+File: server/app/main.py
+
+Key Components:
+1. FastAPI Instance Creation
+   - Creates the main application instance
+   - Configures application metadata
+
+2. CORS Middleware
+   - Enables Cross-Origin Resource Sharing
+   - Allows frontend to communicate with backend
+   - Configuration: Allows all origins (configurable for production)
+
+3. Static File Serving
+   - Serves frontend HTML files
+   - Mounts static directory
+   - Handles routing for frontend access
+
+4. Route Registration
+   - Includes chat router
+   - Defines home endpoint
+   - Defines chatbox endpoint
+
+Code Flow:
+1. Application starts
+2. Middleware configured
+3. Routes registered
+4. Server listens on port 8000
+
+3.1.2 API Route Implementation
+------------------------------
+File: server/app/routes/chat_router.py
+
+Endpoint: POST /chat/
+
+Request Flow:
+1. Receives POST request with JSON body
+2. Validates request using Pydantic schema
+3. Extracts message from payload
+4. Calls LLM service
+5. Returns response as JSON
+
+Request Schema:
+{
+    "message": "string"  # User's medical question
+}
+
+Response Schema:
+{
+    "response": "string"  # AI-generated answer
+}
+
+Error Handling:
+- Catches exceptions from LLM service
+- Returns user-friendly error messages
+- Maintains consistent response format
+
+3.1.3 LLM Service Implementation
+-----------------------------------
+File: server/app/services/llm_service.py
+
+Key Functions:
+
+1. Environment Configuration
+   - Loads .env file from server directory
+   - Retrieves GITHUB_TOKEN
+   - Sets model name (gpt-4o-mini)
+
+2. Client Initialization (Lazy Loading)
+   - Creates Azure AI Inference client
+   - Uses AzureKeyCredential for authentication
+   - Initializes only when needed (avoids import-time errors)
+
+3. LLM Query Processing
+   - Formats user message with system prompt
+   - Sends request to GitHub AI API
+   - Processes response
+   - Returns extracted content
+
+System Prompt:
+"You are a helpful assistant. help the user for medical assistance. 
+instructions: give short and precise answers."
+
+Message Structure:
+- SystemMessage: Sets AI role and behavior
+- UserMessage: Contains user's query
+
+Error Handling:
+- Invalid token errors
+- Model unavailable errors
+- Network errors
+- API rate limiting
+
+3.1.4 Data Validation
+---------------------
+File: server/app/schemas/chat_schema.py
+
+Pydantic Model:
+- ChatRequest: Validates incoming requests
+- Ensures message field is present and is a string
+- Provides automatic validation and error messages
+
+3.2 Frontend Implementation
+----------------------------
+
+3.2.1 HTML Structure
+---------------------
+File: frontend/index.html
+
+Layout:
+- Header: Application title and description
+- Chat Messages Area: Scrollable message container
+- Input Area: Message input and send button
+- Error Container: Error message display
+
+3.2.2 Styling (CSS)
+--------------------
+Features:
+- Modern gradient design
+- Responsive layout
+- Smooth animations
+- User and assistant message differentiation
+- Loading indicators
+- Custom scrollbar styling
+
+Design Principles:
+- Clean and professional appearance
+- Medical/clinical theme
+- High contrast for readability
+- Mobile-friendly responsive design
+
+3.2.3 JavaScript Functionality
+-------------------------------
+
+Key Functions:
+
+1. sendMessage()
+   - Validates input
+   - Disables UI during request
+   - Sends POST request to API
+   - Handles response
+   - Updates UI with response
+   - Manages error states
+   - Saves to session history
+
+2. addMessageToUI()
+   - Creates message DOM elements with icons
+   - Differentiates user/assistant messages
+   - Adds timestamps
+   - Scrolls to bottom
+   - Animates message appearance
+   - Saves to current session
+
+3. Patient History Management
+   - loadHistory(): Loads consultation history from LocalStorage
+   - saveToHistory(): Saves current session to history
+   - loadSession(): Loads a previous consultation
+   - clearHistory(): Clears all stored history
+   - saveCurrentSession(): Persists current session
+   - loadCurrentSession(): Restores session on page load
+
+4. Session Persistence
+   - Uses LocalStorage API
+   - Stores current session (CURRENT_SESSION_KEY)
+   - Stores history (HISTORY_KEY)
+   - Maintains up to 20 previous consultations
+   - Auto-saves on page unload
+
+5. Error Handling
+   - Network error detection
+   - Server error handling
+   - User-friendly error messages
+   - Automatic error clearing
+
+API Integration:
+- Base URL: http://localhost:8000/chat/
+- Method: POST
+- Content-Type: application/json
+- Handles async/await for API calls
+- Maintains conversation context
+
+================================================================================
+4. DATA FLOW
+================================================================================
+
+4.1 User Query Flow
+-------------------
+
+Step 1: User Input
+-------------------
+- User types question in chatbox
+- JavaScript captures input on Enter key or Send button click
+- Input validated (non-empty check)
+
+Step 2: Frontend Request
+------------------------
+- JavaScript creates POST request
+- Request body: {"message": "user question"}
+- Headers: Content-Type: application/json
+- Request sent to http://localhost:8000/chat/
+
+Step 3: Backend Processing
+---------------------------
+- FastAPI receives request
+- Pydantic validates request schema
+- Chat router extracts message
+- Calls llm_service.ask_llm(message)
+
+Step 4: LLM Service Processing
+---------------------------------
+- Service loads environment variables
+- Initializes Azure AI client (if not already done)
+- Formats messages:
+  * SystemMessage: Role definition
+  * UserMessage: User's question
+- Sends request to GitHub AI Inference API
+- Waits for response
+
+Step 5: External API Call
+--------------------------
+- Request sent to: https://models.github.ai/inference
+- Authentication: GitHub token in header
+- Model: gpt-4o-mini
+- API processes request
+- Returns AI-generated response
+
+Step 6: Response Processing
+----------------------------
+- LLM service extracts response content
+- Returns text to chat router
+- Router formats as JSON: {"response": "..."}
+- HTTP 200 response sent to frontend
+
+Step 7: Frontend Display
+-------------------------
+- JavaScript receives response
+- Creates message element
+- Adds to chat container
+- Scrolls to show new message
+- Re-enables input controls
+
+4.2 Error Flow
+---------------
+
+Scenario 1: Invalid Token
+--------------------------
+1. LLM service attempts API call
+2. API returns 401 Unauthorized
+3. Service catches exception
+4. Returns error message
+5. Frontend displays error in chat
+6. User sees: "Invalid or expired GitHub token"
+
+Scenario 2: Network Error
+---------------------------
+1. Frontend sends request
+2. Network fails (server down, no connection)
+3. JavaScript catch block triggered
+4. Error message displayed
+5. User sees: "Please make sure the server is running"
+
+Scenario 3: Model Error
+-----------------------
+1. API call succeeds but model unavailable
+2. API returns model error
+3. Service catches exception
+4. Returns helpful error message
+5. Frontend displays error
+
+================================================================================
+5. AUTHENTICATION AND SECURITY
+================================================================================
+
+5.1 Authentication Mechanism
+-----------------------------
+
+Method: GitHub Personal Access Token (PAT)
+
+Implementation:
+- Token stored in .env file (not in code)
+- Loaded using python-dotenv
+- Used for Azure AI Inference API authentication
+- Never exposed to frontend
+
+Token Format:
+- Classic PAT: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+- Fine-grained: github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+5.2 Security Measures
+---------------------
+
+1. Environment Variables
+   - Sensitive data in .env file
+   - .env excluded from version control (.gitignore)
+   - Never hardcoded in source code
+
+2. CORS Configuration
+   - Currently allows all origins (development)
+   - Should be restricted in production
+   - Prevents unauthorized cross-origin requests
+
+3. Input Validation
+   - Pydantic schema validation
+   - Prevents malformed requests
+   - Type checking on all inputs
+
+4. Error Message Sanitization
+   - User-friendly error messages
+   - No sensitive information exposed
+   - Technical details hidden from users
+
+5.3 Best Practices
+-------------------
+
+- Token rotation recommended
+- HTTPS in production (currently HTTP for local)
+- Rate limiting consideration
+- Input sanitization
+- Regular security updates
+
+================================================================================
+6. DEPLOYMENT AND CONFIGURATION
+================================================================================
+
+6.1 Environment Setup
+---------------------
+
+Prerequisites:
+- Python 3.8 or higher
+- pip package manager
+- GitHub account with token
+
+Installation Steps:
+1. Clone/download project
+2. Navigate to server directory
+3. Install dependencies: pip install -r requirements.txt
+4. Create .env file with GITHUB_TOKEN
+5. Start server: uvicorn app.main:app --reload
+
+6.2 Configuration Files
+-----------------------
+
+requirements.txt:
+- Lists all Python dependencies
+- Version pinning for stability
+- Includes: fastapi, uvicorn, azure-ai-inference, etc.
+
+.env:
+- GITHUB_TOKEN=your_token_here
+- Optional: MODEL_NAME=custom_model
+- Located in server directory
+
+6.3 Server Startup
+-------------------
+
+Development Mode:
+- Command: uvicorn app.main:app --reload
+- Auto-reload on code changes
+- Debug mode enabled
+- Host: 0.0.0.0 (all interfaces)
+- Port: 8000
+
+Production Considerations:
+- Use production ASGI server (Gunicorn + Uvicorn workers)
+- Disable reload
+- Set proper logging
+- Use environment variables for configuration
+- Enable HTTPS
+- Set up reverse proxy (Nginx)
+
+6.4 Access Points
+-----------------
+
+- Home/Chatbox: http://localhost:8000/
+- API Docs: http://localhost:8000/docs
+- API Endpoint: http://localhost:8000/chat/
+- Alternative Docs: http://localhost:8000/redoc
+
+================================================================================
+7. TESTING METHODOLOGY
+================================================================================
+
+7.1 Testing Levels
+------------------
+
+1. Unit Testing
+   - Individual function testing
+   - Service layer testing
+   - Schema validation testing
+
+2. Integration Testing
+   - API endpoint testing
+   - Frontend-backend integration
+   - External API integration
+
+3. System Testing
+   - End-to-end user flows
+   - Error scenarios
+   - Performance testing
+
+4. User Acceptance Testing
+   - Medical question accuracy
+   - UI/UX validation
+   - Response quality
+
+7.2 Test Categories
+--------------------
+
+Functional Tests:
+- API endpoint functionality
+- Message sending/receiving
+- Error handling
+- Input validation
+
+Medical Accuracy Tests:
+- Symptom queries
+- Disease information
+- Treatment options
+- Emergency guidance
+
+UI/UX Tests:
+- Interface responsiveness
+- Message display
+- Loading states
+- Error messages
+
+Performance Tests:
+- Response time
+- Concurrent requests
+- Server stability
+
+7.3 Test Execution
+-------------------
+
+Manual Testing:
+- Use browser to test UI
+- Use Postman/curl for API testing
+- Test various medical scenarios
+
+Automated Testing:
+- Python test scripts
+- API testing with requests library
+- Selenium for UI testing (optional)
+
+Test Documentation:
+- Test cases documented in TEST_CASES.md
+- Results recorded
+- Issues tracked and resolved
+
+================================================================================
+8. TECHNOLOGIES AND TOOLS
+================================================================================
+
+8.1 Backend Technologies
+------------------------
+
+Python 3.13
+- Programming language
+- Modern features and performance
+
+FastAPI 0.120.0
+- Web framework
+- Automatic API documentation
+- Type hints support
+- High performance
+
+Uvicorn 0.38.0
+- ASGI server
+- Handles HTTP requests
+- Supports async operations
+
+Azure AI Inference SDK 1.0.0b9
+- GitHub AI API integration
+- Chat completions client
+- Message handling
+
+python-dotenv 1.2.1
+- Environment variable management
+- .env file loading
+
+Pydantic 2.12.3
+- Data validation
+- Request/response models
+- Type safety
+
+8.2 Frontend Technologies
+--------------------------
+
+HTML5
+- Structure and semantics
+- Modern web standards
+
+CSS3
+- Styling and layout
+- Animations and transitions
+- Responsive design
+
+JavaScript (ES6+)
+- Client-side logic
+- API communication
+- DOM manipulation
+- Async/await for async operations
+
+8.3 External Services
+---------------------
+
+GitHub AI Inference API
+- AI model hosting
+- Model: gpt-4o-mini
+- RESTful API
+- Authentication via GitHub token
+
+8.4 Development Tools
+---------------------
+
+- Git: Version control
+- VS Code/Cursor: Code editor
+- Browser DevTools: Debugging
+- Postman: API testing (optional)
+
+================================================================================
+9. PROJECT STRUCTURE
+================================================================================
+
+Gen-AI--Clinical-Decision-Making-/
+│
+├── server/                    # Backend application
+│   ├── app/
+│   │   ├── main.py           # FastAPI app, routing, CORS
+│   │   ├── routes/
+│   │   │   └── chat_router.py  # Chat API endpoints
+│   │   ├── services/
+│   │   │   └── llm_service.py   # LLM integration
+│   │   ├── schemas/
+│   │   │   └── chat_schema.py   # Data models
+│   │   └── models/
+│   │       └── user_model.py    # User models (if needed)
+│   ├── requirements.txt       # Python dependencies
+│   ├── .env                   # Environment variables (not in git)
+│   ├── start_server.bat       # Windows startup script
+│   └── start_server.ps1       # PowerShell startup script
+│
+├── frontend/                  # Frontend application
+│   └── index.html            # Chatbox interface
+│
+├── readme.md                  # Project documentation
+├── HOW_TO_RUN.md              # Setup instructions
+├── GITHUB_TOKEN_SETUP.md      # Token setup guide
+├── TEST_CASES.md              # Test case documentation
+└── methodology.txt            # This file
+
+================================================================================
+10. KEY FEATURES AND FUNCTIONALITY
+================================================================================
+
+10.1 Core Features
+------------------
+
+1. Medical Question Answering
+   - Accepts medical queries
+   - Provides accurate information
+   - Concise and relevant responses
+   - Medical context awareness
+
+2. Real-time Chat Interface
+   - Instant message sending
+   - Live response display
+   - Message history with timestamps
+   - Professional medical UI design
+
+3. Patient History Management
+   - Consultation history storage
+   - Previous session retrieval
+   - History sidebar navigation
+   - Session persistence (LocalStorage)
+   - Up to 20 previous consultations
+   - Session preview and loading
+
+4. User-Friendly Interface
+   - Modern, professional medical design
+   - Intuitive navigation
+   - Responsive layout
+   - Medical-themed color scheme
+   - Clear visual hierarchy
+
+5. Error Handling
+   - Graceful error management
+   - User-friendly messages
+   - Recovery mechanisms
+   - Network error detection
+
+6. API Documentation
+   - Automatic Swagger UI
+   - Interactive API testing
+   - Endpoint documentation
+
+10.2 Medical Assistant Capabilities
+------------------------------------
+
+- Symptom analysis and information
+- Disease information and explanations
+- Treatment option guidance
+- Preventive care advice
+- Medication information
+- Emergency symptom recognition
+- Chronic condition management
+
+10.3 System Capabilities
+------------------------
+
+- Multiple concurrent users
+- Fast response times
+- Scalable architecture
+- Easy configuration
+- Comprehensive error handling
+
+================================================================================
+11. FUTURE ENHANCEMENTS
+================================================================================
+
+Potential Improvements:
+
+1. User Authentication
+   - User accounts and login
+   - Session management
+   - User history tracking
+
+2. Advanced Features
+   - Conversation history persistence
+   - Multi-language support
+   - Voice input/output
+   - Image analysis for symptoms
+
+3. Medical Integration
+   - Integration with medical databases
+   - Drug interaction checking
+   - Lab result interpretation
+   - Appointment scheduling
+
+4. Performance Optimization
+   - Response caching
+   - Database integration
+   - Load balancing
+   - CDN for static assets
+
+5. Security Enhancements
+   - HTTPS implementation
+   - Rate limiting
+   - Input sanitization
+   - Audit logging
+
+6. Analytics
+   - Usage statistics
+   - Response quality metrics
+   - User feedback system
+   - Performance monitoring
+
+================================================================================
+12. TROUBLESHOOTING GUIDE
+================================================================================
+
+Common Issues and Solutions:
+
+1. Server Won't Start
+   - Check Python version (3.8+)
+   - Verify dependencies installed
+   - Check port 8000 availability
+   - Review error logs
+
+2. Token Errors
+   - Verify .env file exists
+   - Check token format
+   - Ensure token is valid
+   - Check token permissions
+
+3. Model Errors
+   - Verify model name
+   - Check API availability
+   - Review API documentation
+   - Try alternative models
+
+4. Frontend Not Loading
+   - Check server is running
+   - Verify CORS configuration
+   - Check browser console
+   - Clear browser cache
+
+5. API Errors
+   - Check network connection
+   - Verify API endpoint
+   - Review request format
+   - Check response status codes
+
+================================================================================
+13. CONCLUSION
+================================================================================
+
+This Clinical Decision Making Application demonstrates:
+
+- Modern web application development
+- AI/ML integration
+- RESTful API design
+- Frontend-backend separation
+- Secure authentication
+- Error handling best practices
+- User-centered design
+
+The system successfully provides medical assistance through an intuitive
+chat interface, leveraging advanced AI models to deliver accurate and
+helpful medical information to users.
+
+The architecture is scalable, maintainable, and follows industry best
+practices for web application development.
+
+================================================================================
+END OF METHODOLOGY DOCUMENT
+================================================================================
+
