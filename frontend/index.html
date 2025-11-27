@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Decision Support System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar for History */
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #34495e;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #1a252f;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .history-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #34495e;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .history-item:hover {
+            background: #3d566e;
+            border-left-color: #3498db;
+        }
+
+        .history-item.active {
+            background: #3498db;
+            border-left-color: #2980b9;
+        }
+
+        .history-item-date {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .history-item-preview {
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .clear-history {
+            padding: 15px 20px;
+            background: #e74c3c;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .clear-history:hover {
+            background: #c0392b;
+        }
+
+        /* Main Chat Area */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .patient-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 65%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .message-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-size: 16px;
+        }
+
+        .message.user .message-icon {
+            background: #3498db;
+            color: white;
+            order: 2;
+        }
+
+        .message.assistant .message-icon {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .send-button {
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #c33;
+            font-size: 13px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 60px 30px;
+            color: #7f8c8d;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .welcome-message h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        .welcome-message p {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-item h3 {
+            color: #3498db;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .feature-item p {
+            font-size: 13px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        .disclaimer {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #856404;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar,
+        .history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track,
+        .history-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb,
+        .history-list::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover,
+        .history-list::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar for Patient History -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>📋 Patient History</h2>
+            <p>Previous consultations</p>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="empty-history">No previous consultations</div>
+        </div>
+        <button class="clear-history" onclick="clearHistory()">Clear History</button>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="main-container">
+        <div class="chat-header">
+            <div class="header-left">
+                <h1>🏥 Clinical Decision Support System</h1>
+                <p>AI-Powered Medical Assistance & Clinical Decision Support</p>
+            </div>
+            <div class="header-right">
+                <div class="patient-info">
+                    <span id="sessionDate"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>Welcome to Clinical Decision Support</h2>
+                <p>Your AI-powered assistant for medical information and clinical decision support.</p>
+                
+                <div class="welcome-features">
+                    <div class="feature-item">
+                        <h3>🔍 Symptom Analysis</h3>
+                        <p>Get insights on symptoms and potential conditions</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>💊 Treatment Guidance</h3>
+                        <p>Evidence-based treatment information</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>📚 Medical Education</h3>
+                        <p>Learn about diseases and health conditions</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>⚕️ Clinical Support</h3>
+                        <p>Decision support for healthcare professionals</p>
+                    </div>
+                </div>
+
+                <div class="disclaimer">
+                    <strong>⚠️ Medical Disclaimer:</strong> This system provides informational support only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult qualified healthcare providers for medical concerns.
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div id="errorContainer"></div>
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask your medical question or describe symptoms..."
+                    autocomplete="off"
+                />
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/chat/';
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const errorContainer = document.getElementById('errorContainer');
+        const historyList = document.getElementById('historyList');
+        const sessionDate = document.getElementById('sessionDate');
+
+        // Patient History Management
+        const HISTORY_KEY = 'patient_history';
+        const CURRENT_SESSION_KEY = 'current_session';
+        let currentSession = [];
+        let isFirstMessage = true;
+
+        // Initialize
+        function init() {
+            // Set session date
+            sessionDate.textContent = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            // Load history
+            loadHistory();
+            loadCurrentSession();
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">No previous consultations</div>';
+                return;
+            }
+
+            historyList.innerHTML = '';
+            history.forEach((session, index) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <div class="history-item-date">${session.date}</div>
+                    <div class="history-item-preview">${session.preview || 'Consultation'}</div>
+                `;
+                item.onclick = () => loadSession(index);
+                historyList.appendChild(item);
+            });
+        }
+
+        function loadCurrentSession() {
+            const saved = localStorage.getItem(CURRENT_SESSION_KEY);
+            if (saved) {
+                currentSession = JSON.parse(saved);
+                if (currentSession.length > 0) {
+                    isFirstMessage = false;
+                    // Remove welcome message
+                    const welcomeMsg = chatMessages.querySelector('.welcome-message');
+                    if (welcomeMsg) welcomeMsg.remove();
+                    
+                    // Restore messages
+                    currentSession.forEach(msg => {
+                        addMessageToUI(msg.content, msg.isUser, false);
+                    });
+                }
+            }
+        }
+
+        function saveCurrentSession() {
+            localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(currentSession));
+        }
+
+        function saveToHistory() {
+            if (currentSession.length === 0) return;
+
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const firstUserMessage = currentSession.find(m => m.isUser);
+            const preview = firstUserMessage ? firstUserMessage.content.substring(0, 50) + '...' : 'Consultation';
+            
+            history.unshift({
+                date: new Date().toLocaleString(),
+                preview: preview,
+                messages: [...currentSession]
+            });
+
+            // Keep only last 20 sessions
+            if (history.length > 20) {
+                history.pop();
+            }
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadSession(index) {
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            if (index >= history.length) return;
+
+            const session = history[index];
+            currentSession = session.messages || [];
+
+            // Clear current messages
+            chatMessages.innerHTML = '';
+            isFirstMessage = false;
+
+            // Load session messages
+            currentSession.forEach(msg => {
+                addMessageToUI(msg.content, msg.isUser, false);
+            });
+
+            saveCurrentSession();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all consultation history?')) {
+                localStorage.removeItem(HISTORY_KEY);
+                localStorage.removeItem(CURRENT_SESSION_KEY);
+                currentSession = [];
+                loadHistory();
+                location.reload();
+            }
+        }
+
+        // Message handling
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function showError(message) {
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function addMessageToUI(content, isUser, saveToSession = true) {
+            // Remove welcome message on first user message
+            if (isFirstMessage && isUser) {
+                const welcomeMsg = chatMessages.querySelector('.welcome-message');
+                if (welcomeMsg) {
+                    welcomeMsg.remove();
+                }
+                isFirstMessage = false;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'message-icon';
+            iconDiv.textContent = isUser ? '👤' : '🤖';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            const timeDiv = document.createElement('span');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString();
+            
+            contentDiv.appendChild(timeDiv);
+            messageDiv.appendChild(iconDiv);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Save to session
+            if (saveToSession) {
+                currentSession.push({
+                    content: content,
+                    isUser: isUser,
+                    timestamp: new Date().toISOString()
+                });
+                saveCurrentSession();
+            }
+        }
+
+        function showLoading() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'loadingMessage';
+            
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'message-icon';
+            iconDiv.textContent = '🤖';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = '<div class="loading"></div> Analyzing...';
+            
+            messageDiv.appendChild(iconDiv);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                return;
+            }
+
+            // Disable input and button
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<div class="loading"></div>';
+
+            // Add user message
+            addMessageToUI(message, true);
+            messageInput.value = '';
+
+            // Show loading indicator
+            showLoading();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                removeLoading();
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.response) {
+                    addMessageToUI(data.response, false);
+                    // Save to history when session ends (optional - or save after each message)
+                } else {
+                    throw new Error('Invalid response from server');
+                }
+
+            } catch (error) {
+                removeLoading();
+                console.error('Error:', error);
+                
+                let errorMessage = 'Sorry, I encountered an error. ';
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += 'Please make sure the server is running at http://localhost:8000';
+                } else if (error.message.includes('Server error: 500')) {
+                    errorMessage += 'The server encountered an error. Please check your GITHUB_TOKEN in the .env file.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                addMessageToUI(errorMessage, false);
+                showError(errorMessage);
+            } finally {
+                // Re-enable input and button
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.innerHTML = 'Send';
+                messageInput.focus();
+            }
+        }
+
+        // Save session to history when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (currentSession.length > 0) {
+                saveToHistory();
+            }
+        });
+
+        // Initialize on load
+        init();
+        messageInput.focus();
+    </script>
+</body>
+</html>
