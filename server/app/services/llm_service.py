@@ -33,7 +33,7 @@ async def ask_llm(query: str):
         client = get_client()
         response = client.complete(
             messages=[
-                SystemMessage("You are a helpful assistant. help the user for medical assistance. instructions: give short and precise answers."),
+                SystemMessage("You are a helpful assistant. help the user for medical assistance. instructions: give short and precise answers. only provide details regarding health and medication."),
                 UserMessage(query)
             ],
             model=model
